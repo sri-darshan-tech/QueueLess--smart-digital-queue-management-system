@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QueueLess — Skip the waiting. Not the service.</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(1.01); }
+        }
+        .animate-glow {
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+
+    <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('landing')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+                    <i data-lucide="ticket" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-extrabold bg-gradient-to-r from-brand-600 to-indigo-600 bg-clip-text text-transparent">QueueLess</span>
+                    <span class="block text-[9px] uppercase tracking-wider text-slate-400 font-semibold">Skip the waiting. Not the service.</span>
+                </div>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="hidden md:flex items-center space-x-1">
+                <button onclick="switchTab('landing')" id="nav-landing" class="px-3 py-2 rounded-lg text-sm font-medium text-brand-600 bg-brand-50 transition-all">Home</button>
+                <button onclick="switchTab('wizard')" id="nav-wizard" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition-all">Get a Token</button>
+                <button onclick="switchTab('queue')" id="nav-queue" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition-all flex items-center gap-1.5">
+                    Live Tracker
+                    <span id="nav-queue-badge" class="hidden px-1.5 py-0.5 text-[10px] bg-emerald-500 text-white rounded-full animate-pulse">Active</span>
+                </button>
+                <button onclick="switchTab('admin')" id="nav-admin" class="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition-all">Staff Admin</button>
+                <button onclick="openPitchModal()" class="px-3 py-2 rounded-lg text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-all flex items-center gap-1">
+                    <i data-lucide="presentation" class="w-4 h-4"></i> Pitch Guide
+                </button>
+            </nav>
+
+            <div class="flex items-center space-x-2">
+                <button onclick="switchTab('wizard')" class="hidden sm:inline-flex items-center justify-center px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 shadow-md shadow-brand-500/20 transition-all transform active:scale-95">
+                    <i data-lucide="plus-circle" class="w-4 h-4 mr-1.5"></i> Get Token
+                </button>
+                <button onclick="resetDemoState()" title="Reset Demo Data" class="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 transition-all text-xs font-semibold flex items-center gap-1">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i> <span class="hidden lg:inline">Reset</span>
+                </button>
+                <!-- Mobile Menu Button -->
+                <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Nav Dropdown -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-4 space-y-1">
+            <button onclick="switchTab('landing'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-600">Home</button>
+            <button onclick="switchTab('wizard'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-600">Get a Token</button>
+            <button onclick="switchTab('queue'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-600">Live Queue Tracker</button>
+            <button onclick="switchTab('admin'); toggleMobileMenu()" class="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-brand-50 hover:text-brand-600">Staff / Admin Login</button>
+            <button onclick="openPitchModal(); toggleMobileMenu()" class="block w-full text-left px-3 py-2 rounded-lg text-base font-medium text-indigo-600 bg-indigo-50">Hackathon Pitch Guide</button>
+        </div>
+    </header>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-3 pointer-events-none"></div>
+
+    <!-- MAIN APP CONTAINER -->
+    <main class="flex-grow">
+
+        <!-- ================= 1. LANDING PAGE VIEW ================= -->
+        <section id="view-landing" class="view-section">
+            <!-- Hero Section -->
+            <div class="relative overflow-hidden pt-12 pb-20 lg:pt-20 lg:pb-32 bg-gradient-to-b from-brand-50/60 via-white to-white">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div class="text-center max-w-3xl mx-auto">
+                        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-50 border border-brand-100 text-brand-700 text-xs font-semibold mb-6 shadow-sm">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Tech for a Better Tomorrow — Hackathon MVP
+                        </div>
+                        <h1 class="text-4xl sm:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight mb-6">
+                            QueueLess — <span class="bg-gradient-to-r from-brand-600 to-indigo-600 bg-clip-text text-transparent">Skip the waiting. Not the service.</span>
+                        </h1>
+                        <p class="text-lg sm:text-xl text-slate-600 mb-10 leading-relaxed">
+                            A smart digital queue management system that helps people access services across hospitals, colleges, banks, and government offices without standing in long physical queues.
+                        </p>
+                        <div class="flex flex-col sm:flex-row justify-center items-center gap-4">
+                            <button onclick="switchTab('wizard')" class="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-xl shadow-brand-600/30 transition-all flex items-center justify-center gap-2 transform active:scale-95">
+                                <i data-lucide="ticket" class="w-5 h-5"></i> Get a Token
+                            </button>
+                            <button onclick="switchTab('admin')" class="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-sm">
+                                <i data-lucide="shield-check" class="w-5 h-5 text-brand-600"></i> Staff / Admin Login
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hero Visual Preview Card -->
+                    <div class="mt-16 max-w-4xl mx-auto rounded-3xl bg-slate-900 p-4 shadow-2xl border border-slate-800 animate-glow">
+                        <div class="bg-slate-950 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden">
+                            <div class="absolute top-4 right-4 flex space-x-1.5">
+                                <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+                                <div class="w-3 h-3 rounded-full bg-amber-500/80"></div>
+                                <div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+                            </div>
+                            <div class="text-xs uppercase tracking-wider text-brand-400 font-bold mb-1">Live Demo Tracker Preview</div>
+                            <div class="text-2xl font-bold mb-6">College — Certificate Request</div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
+                                    <div class="text-slate-400 text-xs mb-1">Your Token</div>
+                                    <div class="text-3xl font-black text-white">A-047</div>
+                                </div>
+                                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
+                                    <div class="text-slate-400 text-xs mb-1">Now Serving</div>
+                                    <div class="text-3xl font-black text-brand-400">A-041</div>
+                                </div>
+                                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
+                                    <div class="text-slate-400 text-xs mb-1">People Ahead</div>
+                                    <div class="text-3xl font-black text-amber-400">6</div>
+                                </div>
+                                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl text-center">
+                                    <div class="text-slate-400 text-xs mb-1">Est. Wait (AI)</div>
+                                    <div class="text-3xl font-black text-emerald-400">12 min</div>
+                                </div>
+                            </div>
+                            <div class="bg-brand-950/60 border border-brand-800/60 rounded-xl p-3.5 text-sm text-brand-200 flex items-center gap-3">
+                                <i data-lucide="bell-ring" class="w-5 h-5 text-brand-400 flex-shrink-0 animate-bounce"></i>
+                                <div><strong class="text-white">Virtual Queue Active:</strong> Leave the waiting room freely. We'll announce and alert you when your turn arrives!</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3 Key Benefits Section -->
+            <div class="py-20 bg-white">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center max-w-2xl mx-auto mb-16">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-4">Why People Choose QueueLess</h2>
+                        <p class="text-slate-600">Transforming tedious waiting rooms into smooth, transparent digital experiences.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="bg-slate-50 border border-slate-200/80 p-8 rounded-2xl hover:shadow-lg transition-all group">
+                            <div class="w-14 h-14 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-brand-600 group-hover:text-white transition-all">
+                                <i data-lucide="clock" class="w-7 h-7"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900 mb-3">Save Time</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">Reduce unnecessary physical waiting. Reclaim your productive hours instead of standing in stagnant lines.</p>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200/80 p-8 rounded-2xl hover:shadow-lg transition-all group">
+                            <div class="w-14 h-14 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-brand-600 group-hover:text-white transition-all">
+                                <i data-lucide="compass" class="w-7 h-7"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900 mb-3">Track Your Queue</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">Know your live position, active counter, and dynamic heuristic AI estimated waiting time instantly.</p>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200/80 p-8 rounded-2xl hover:shadow-lg transition-all group">
+                            <div class="w-14 h-14 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-brand-600 group-hover:text-white transition-all">
+                                <i data-lucide="bell" class="w-7 h-7"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-900 mb-3">Smart Notifications</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">Receive browser speech announcements and alerts when your turn is approaching so you arrive right on time.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- How It Works Section -->
+            <div class="py-20 bg-slate-50 border-t border-slate-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center max-w-2xl mx-auto mb-16">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-4">How QueueLess Works</h2>
+                        <p class="text-slate-600">A seamless 5-step journey designed for effortless visitor flow.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 text-center relative shadow-sm">
+                            <div class="w-10 h-10 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center mx-auto mb-4">1</div>
+                            <h4 class="font-bold text-slate-900 mb-2">Select Service</h4>
+                            <p class="text-xs text-slate-500">Choose organization type and specific department needed.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 text-center relative shadow-sm">
+                            <div class="w-10 h-10 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center mx-auto mb-4">2</div>
+                            <h4 class="font-bold text-slate-900 mb-2">Get Digital Token</h4>
+                            <p class="text-xs text-slate-500">Receive instant token number (e.g. A-047) on your screen.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 text-center relative shadow-sm">
+                            <div class="w-10 h-10 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center mx-auto mb-4">3</div>
+                            <h4 class="font-bold text-slate-900 mb-2">Track Queue</h4>
+                            <p class="text-xs text-slate-500">Watch live updates as the counter progresses in real-time.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 text-center relative shadow-sm">
+                            <div class="w-10 h-10 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center mx-auto mb-4">4</div>
+                            <h4 class="font-bold text-slate-900 mb-2">Get Notified</h4>
+                            <p class="text-xs text-slate-500">Alert triggers when you are 2 tokens away or called.</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200 text-center relative shadow-sm">
+                            <div class="w-10 h-10 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center mx-auto mb-4">5</div>
+                            <h4 class="font-bold text-slate-900 mb-2">Visit Counter</h4>
+                            <p class="text-xs text-slate-500">Walk directly up to your assigned counter and get served.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Use Cases Section -->
+            <div class="py-20 bg-white border-t border-slate-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center max-w-2xl mx-auto mb-16">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-4">Built for Every Service Sector</h2>
+                        <p class="text-slate-600">Wherever people queue, QueueLess brings order, dignity, and efficiency.</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <div class="bg-slate-50 border border-slate-200 p-6 rounded-2xl text-center hover:border-brand-500 hover:bg-brand-50/20 transition-all">
+                            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                <i data-lucide="hospital" class="w-6 h-6"></i>
+                            </div>
+                            <h4 class="font-bold text-slate-900 text-sm">Hospitals</h4>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 p-6 rounded-2xl text-center hover:border-brand-500 hover:bg-brand-50/20 transition-all">
+                            <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+                            </div>
+                            <h4 class="font-bold text-slate-900 text-sm">Colleges</h4>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 p-6 rounded-2xl text-center hover:border-brand-500 hover:bg-brand-50/20 transition-all">
+                            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                <i data-lucide="landmark" class="w-6 h-6"></i>
+                            </div>
+                            <h4 class="font-bold text-slate-900 text-sm">Government Offices</h4>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 p-6 rounded-2xl text-center hover:border-brand-500 hover:bg-brand-50/20 transition-all">
+                            <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                <i data-lucide="building-2" class="w-6 h-6"></i>
+                            </div>
+                            <h4 class="font-bold text-slate-900 text-sm">Banks</h4>
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 p-6 rounded-2xl text-center hover:border-brand-500 hover:bg-brand-50/20 transition-all col-span-2 sm:col-span-1">
+                            <div class="w-12 h-12 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+                                <i data-lucide="headphones" class="w-6 h-6"></i>
+                            </div>
+                            <h4 class="font-bold text-slate-900 text-sm">Service Centers</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= 2. USER TOKEN WIZARD VIEW ================= -->
+        <section id="view-wizard" class="view-section hidden py-12 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto">
+            <div class="bg-white border border-slate-200 rounded-3xl shadow-xl overflow-hidden p-6 sm:p-10">
+                <div class="mb-8">
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50 text-brand-700 text-xs font-semibold mb-3">
+                        <i data-lucide="ticket" class="w-3.5 h-3.5"></i> Token Generation Wizard
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Get Your Digital Token</h2>
+                    <p class="text-slate-600 text-sm mt-1">Complete the steps below to join the virtual queue instantly.</p>
+                </div>
+
+                <form id="token-form" onsubmit="handleGenerateToken(event)" class="space-y-8">
+                    <!-- Step 1: Organization Type -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-800 mb-3">Step 1: Select Organization Type</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="orgType" value="College" class="peer sr-only" checked onchange="updateDepartments()">
+                                <div class="p-4 rounded-xl border border-slate-200 text-center peer-checked:border-brand-600 peer-checked:bg-brand-50/60 peer-checked:text-brand-700 hover:bg-slate-50 transition-all">
+                                    <i data-lucide="graduation-cap" class="w-6 h-6 mx-auto mb-2 text-slate-600 peer-checked:text-brand-600"></i>
+                                    <span class="text-xs font-semibold block">College</span>
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="orgType" value="Hospital" class="peer sr-only" onchange="updateDepartments()">
+                                <div class="p-4 rounded-xl border border-slate-200 text-center peer-checked:border-brand-600 peer-checked:bg-brand-50/60 peer-checked:text-brand-700 hover:bg-slate-50 transition-all">
+                                    <i data-lucide="hospital" class="w-6 h-6 mx-auto mb-2 text-slate-600 peer-checked:text-brand-600"></i>
+                                    <span class="text-xs font-semibold block">Hospital</span>
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="orgType" value="Bank" class="peer sr-only" onchange="updateDepartments()">
+                                <div class="p-4 rounded-xl border border-slate-200 text-center peer-checked:border-brand-600 peer-checked:bg-brand-50/60 peer-checked:text-brand-700 hover:bg-slate-50 transition-all">
+                                    <i data-lucide="building-2" class="w-6 h-6 mx-auto mb-2 text-slate-600 peer-checked:text-brand-600"></i>
+                                    <span class="text-xs font-semibold block">Bank</span>
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="orgType" value="Govt Office" class="peer sr-only" onchange="updateDepartments()">
+                                <div class="p-4 rounded-xl border border-slate-200 text-center peer-checked:border-brand-600 peer-checked:bg-brand-50/60 peer-checked:text-brand-700 hover:bg-slate-50 transition-all">
+                                    <i data-lucide="landmark" class="w-6 h-6 mx-auto mb-2 text-slate-600 peer-checked:text-brand-600"></i>
+                                    <span class="text-xs font-semibold block">Govt Office</span>
+                                </div>
+                            </label>
+                            <label class="cursor-pointer col-span-2 sm:col-span-1">
+                                <input type="radio" name="orgType" value="Other" class="peer sr-only" onchange="updateDepartments()">
+                                <div class="p-4 rounded-xl border border-slate-200 text-center peer-checked:border-brand-600 peer-checked:bg-brand-50/60 peer-checked:text-brand-700 hover:bg-slate-50 transition-all">
+                                    <i data-lucide="headphones" class="w-6 h-6 mx-auto mb-2 text-slate-600 peer-checked:text-brand-600"></i>
+                                    <span class="text-xs font-semibold block">Other</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Department / Service -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-800 mb-2">Step 2: Select Department / Service</label>
+                        <select id="department-select" class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium text-sm">
+                            <option value="Certificate Request">Certificate Request</option>
+                            <option value="Fee Enquiry">Fee Enquiry</option>
+                            <option value="Bonafide Request">Bonafide Request</option>
+                            <option value="OD Request">OD Request</option>
+                            <option value="General Enquiry">General Enquiry</option>
+                        </select>
+                    </div>
+
+                    <!-- Step 3: User Information -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-800 mb-2">Step 3: Your Full Name</label>
+                            <input type="text" id="user-name" required placeholder="e.g. Alex Morgan" class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-800 mb-2">Phone / Email <span class="text-slate-400 font-normal">(Optional)</span></label>
+                            <input type="text" id="user-contact" placeholder="alex@example.com" class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full py-4 rounded-xl text-white font-bold bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 shadow-xl shadow-brand-600/30 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="ticket" class="w-5 h-5"></i> Generate Digital Token Now
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ================= 3. TOKEN & LIVE QUEUE TRACKER VIEW ================= -->
+        <section id="view-queue" class="view-section hidden py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+            <div class="space-y-6">
+                <!-- Status Banner -->
+                <div class="bg-gradient-to-r from-slate-900 to-brand-950 text-white rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 -mt-8 -mr-8 w-48 h-48 bg-brand-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
+                        <div>
+                            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/30 text-brand-200 text-xs font-semibold mb-3">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Virtual Queue Connected
+                            </div>
+                            <h2 class="text-2xl sm:text-3xl font-extrabold" id="tracker-service-title">College — Certificate Request</h2>
+                            <p class="text-slate-300 text-sm mt-1">Visitor: <span id="tracker-visitor-name" class="font-semibold text-white">Alex Morgan</span> <span id="tracker-priority-badge" class="hidden ml-2 px-2 py-0.5 rounded text-[10px] bg-red-500 text-white font-bold uppercase">Priority</span></p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="bg-white/10 backdrop-blur-md border border-white/20 px-6 py-4 rounded-2xl text-center">
+                                <span class="text-xs uppercase tracking-wider text-brand-300 block mb-1">Your Token</span>
+                                <span id="tracker-token-display" class="text-4xl font-black text-white">A-047</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Metrics Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div class="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm text-center">
+                        <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Current Serving</div>
+                        <div id="tracker-serving-token" class="text-3xl font-extrabold text-brand-600">A-041</div>
+                    </div>
+                    <div class="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm text-center">
+                        <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">People Ahead</div>
+                        <div id="tracker-people-ahead" class="text-3xl font-extrabold text-amber-500">6</div>
+                    </div>
+                    <div class="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm text-center">
+                        <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Est. Wait (AI Heuristic)</div>
+                        <div id="tracker-wait-time" class="text-3xl font-extrabold text-emerald-600">12 min</div>
+                    </div>
+                    <div class="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm text-center">
+                        <div class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Assigned Counter</div>
+                        <div id="tracker-counter" class="text-3xl font-extrabold text-indigo-600">Counter 3</div>
+                    </div>
+                </div>
+
+                <!-- Visual Queue Progress Indicator -->
+                <div class="bg-white border border-slate-200 p-6 sm:p-8 rounded-2xl shadow-sm">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="git-commit" class="w-5 h-5 text-brand-600"></i> Visual Queue Progression
+                        </h3>
+                        <span id="tracker-status-text" class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">Status: Waiting</span>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-4 my-4 overflow-x-auto py-2" id="queue-flow-chain">
+                        <!-- Dynamic Nodes -->
+                    </div>
+                </div>
+
+                <!-- Virtual Queue Notice & Share Button -->
+                <div class="bg-brand-50 border border-brand-100 p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-brand-600 text-white flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <i data-lucide="bell" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-base font-bold text-brand-900 mb-1">📍 Virtual Queue Active — Leave the Room Freely</h4>
+                            <p class="text-sm text-brand-700 leading-relaxed">
+                                You don't need to physically stand in line. Our voice announcer and notifications will call you right on time!
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="shareTokenLink()" class="px-4 py-2.5 rounded-xl bg-white border border-brand-200 text-brand-700 font-semibold text-xs hover:bg-brand-100 transition-all flex items-center gap-1.5 flex-shrink-0 shadow-sm">
+                        <i data-lucide="share-2" class="w-4 h-4"></i> Share Companion Link
+                    </button>
+                </div>
+
+                <!-- Post-Service Feedback Rating (Appears when completed) -->
+                <div id="feedback-section" class="hidden bg-white border border-emerald-200 p-6 sm:p-8 rounded-2xl shadow-lg text-center animate-glow">
+                    <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="check-circle" class="w-6 h-6"></i>
+                    </div>
+                    <h4 class="text-xl font-bold text-slate-900 mb-1">Service Completed Successfully!</h4>
+                    <p class="text-xs text-slate-500 mb-6">How was your queue and service experience today?</p>
+                    <div class="flex justify-center gap-4">
+                        <button onclick="submitRating('Satisfied', 5)" class="p-4 rounded-xl border border-slate-200 hover:bg-emerald-50 hover:border-emerald-500 transition-all flex flex-col items-center gap-1 group">
+                            <span class="text-3xl">😊</span>
+                            <span class="text-xs font-semibold text-slate-700 group-hover:text-emerald-700">Satisfied</span>
+                        </button>
+                        <button onclick="submitRating('Neutral', 3)" class="p-4 rounded-xl border border-slate-200 hover:bg-amber-50 hover:border-amber-500 transition-all flex flex-col items-center gap-1 group">
+                            <span class="text-3xl">😐</span>
+                            <span class="text-xs font-semibold text-slate-700 group-hover:text-amber-700">Neutral</span>
+                        </button>
+                        <button onclick="submitRating('Slow', 1)" class="p-4 rounded-xl border border-slate-200 hover:bg-red-50 hover:border-red-500 transition-all flex flex-col items-center gap-1 group">
+                            <span class="text-3xl">😞</span>
+                            <span class="text-xs font-semibold text-slate-700 group-hover:text-red-700">Slow</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Back to Wizard -->
+                <div class="flex justify-center pt-2">
+                    <button onclick="switchTab('wizard')" class="text-sm font-semibold text-slate-600 hover:text-brand-600 underline">
+                        ← Get another token or switch service
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= 4. ADMIN / STAFF DASHBOARD VIEW ================= -->
+        <section id="view-admin" class="view-section hidden py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+            <div class="space-y-8">
+                <!-- Admin Header -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl shadow-sm">
+                    <div>
+                        <div class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold mb-2">
+                            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Staff / Admin Control Console
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">QueueLess Staff Dashboard</h2>
+                        <p class="text-slate-500 text-sm">Manage active counters, call next visitors, trigger voice announcements, and monitor analytics.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span id="admin-queue-status-badge" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Queue Active
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Analytics & Overview Metrics -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                        <div class="text-slate-400 text-[11px] uppercase font-semibold mb-1">Current Serving</div>
+                        <div id="admin-metric-serving" class="text-3xl font-black text-brand-600">A-041</div>
+                    </div>
+                    <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                        <div class="text-slate-400 text-[11px] uppercase font-semibold mb-1">Waiting Users</div>
+                        <div id="admin-metric-waiting" class="text-3xl font-black text-amber-500">6</div>
+                    </div>
+                    <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                        <div class="text-slate-400 text-[11px] uppercase font-semibold mb-1">Completed Today</div>
+                        <div id="admin-metric-completed" class="text-3xl font-black text-emerald-600">40</div>
+                    </div>
+                    <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                        <div class="text-slate-400 text-[11px] uppercase font-semibold mb-1">Avg Wait Time</div>
+                        <div id="admin-metric-avgwait" class="text-3xl font-black text-slate-800">2.0m</div>
+                    </div>
+                    <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                        <div class="text-slate-400 text-[11px] uppercase font-semibold mb-1">Active Counters</div>
+                        <div id="admin-metric-counters" class="text-3xl font-black text-indigo-600">3</div>
+                    </div>
+                    <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                        <div class="text-slate-400 text-[11px] uppercase font-semibold mb-1">Satisfaction</div>
+                        <div id="admin-metric-satisfaction" class="text-3xl font-black text-violet-600">4.9/5</div>
+                    </div>
+                </div>
+
+                <!-- Action Controls Bar -->
+                <div class="bg-slate-900 text-white p-6 sm:p-8 rounded-3xl shadow-xl flex flex-wrap gap-4 items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold mb-1">Counter Control & Voice Announcer</h3>
+                        <p class="text-slate-400 text-sm">Assign destination counter and execute queue operations with audio.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div class="flex items-center gap-2 bg-slate-800 px-3 py-2 rounded-xl border border-slate-700">
+                            <i data-lucide="compass" class="w-4 h-4 text-brand-400"></i>
+                            <select id="admin-counter-select" class="bg-transparent text-white text-xs font-semibold focus:outline-none cursor-pointer">
+                                <option value="Counter 1">Counter 1</option>
+                                <option value="Counter 2">Counter 2</option>
+                                <option value="Counter 3" selected>Counter 3</option>
+                            </select>
+                        </div>
+                        <button onclick="adminCallNext()" class="px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm shadow-lg shadow-brand-600/30 transition-all flex items-center gap-2">
+                            <i data-lucide="skip-forward" class="w-4 h-4"></i> Call Next (Speak)
+                        </button>
+                        <button onclick="adminRecall()" class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm border border-slate-700 transition-all">
+                            Recall
+                        </button>
+                        <button onclick="adminSkip()" class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-sm border border-slate-700 transition-all">
+                            Skip
+                        </button>
+                        <button onclick="adminTogglePause()" id="admin-pause-btn" class="px-4 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-sm transition-all">
+                            Pause Counter
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Queue Table & Priority Triage -->
+                <div class="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-lg">Active Queue Directory & Priority Triage</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Admin-controlled priority for elderly, PWD, or emergency cases.</p>
+                        </div>
+                        <div class="text-xs font-semibold text-brand-600 bg-brand-50 px-3 py-1.5 rounded-lg">
+                            Real-time Synced with User Tracker
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 text-xs uppercase font-semibold">
+                                    <th class="p-4">Token Number</th>
+                                    <th class="p-4">Visitor Name</th>
+                                    <th class="p-4">Service</th>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4">Priority Status</th>
+                                    <th class="p-4 text-right">Actions / Speak</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-table-body" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Analytics Charts Representation -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Hourly Volume -->
+                    <div class="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm">
+                        <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <i data-lucide="bar-chart-2" class="w-5 h-5 text-brand-600"></i> Tokens Served Per Hour
+                        </h3>
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold text-slate-600 mb-1"><span>09:00 AM</span><span>18 tokens</span></div>
+                                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden"><div class="bg-brand-600 h-full rounded-full" style="width: 60%"></div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold text-slate-600 mb-1"><span>10:00 AM (Peak)</span><span>35 tokens</span></div>
+                                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden"><div class="bg-brand-600 h-full rounded-full" style="width: 95%"></div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold text-slate-600 mb-1"><span>11:00 AM</span><span>28 tokens</span></div>
+                                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden"><div class="bg-brand-600 h-full rounded-full" style="width: 75%"></div></div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold text-slate-600 mb-1"><span>12:00 PM</span><span>22 tokens</span></div>
+                                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden"><div class="bg-brand-600 h-full rounded-full" style="width: 55%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Peak Hours & Summary -->
+                    <div class="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                <i data-lucide="trending-up" class="w-5 h-5 text-emerald-600"></i> Operational Peak Insights
+                            </h3>
+                            <ul class="space-y-3 text-sm text-slate-600">
+                                <li class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                                    <span class="font-medium text-slate-800">Peak Rush Hour</span>
+                                    <span class="font-bold text-brand-600">10:00 AM — 11:30 AM</span>
+                                </li>
+                                <li class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                                    <span class="font-medium text-slate-800">Average Service Time</span>
+                                    <span class="font-bold text-emerald-600">2.1 minutes / visitor</span>
+                                </li>
+                                <li class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                                    <span class="font-medium text-slate-800">Busiest Department</span>
+                                    <span class="font-bold text-indigo-600">Certificate & Fee Enquiries</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
+                            <span>QueueLess Analytics v2.4</span>
+                            <span class="text-emerald-600 font-semibold">● System Healthy</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= 5. HACKATHON PITCH & DEMO GUIDE MODAL ================= -->
+    <div id="pitch-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closePitchModal()" class="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 text-slate-500">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center">
+                    <i data-lucide="presentation" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-extrabold text-slate-900">Hackathon Pitch & Demo Guide</h3>
+                    <p class="text-xs text-slate-500">Use this script and 2-minute walkthrough to impress the judges!</p>
+                </div>
+            </div>
+
+            <div class="space-y-6 text-sm text-slate-700">
+                <div class="bg-brand-50 border border-brand-100 p-4 rounded-2xl">
+                    <h4 class="font-bold text-brand-900 mb-1">🔥 The Killer Hook</h4>
+                    <p class="text-brand-700 italic">"Why should someone spend 40 minutes standing in a stagnant queue when technology can tell them exactly when to arrive?"</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-slate-900 mb-2">🎬 2-Minute Demo Walkthrough</h4>
+                    <ol class="list-decimal pl-5 space-y-2 text-slate-600">
+                        <li><strong>Scene 1 (User):</strong> Open QueueLess, select <em>College — Certificate Request</em>, click <strong>Get Token</strong>. Receive token <code class="bg-slate-100 px-1.5 py-0.5 rounded text-brand-600 font-bold">A-047</code>.</li>
+                        <li><strong>Scene 2 (Virtual Queue):</strong> Show the live tracker, AI wait time, and explain that visitors can leave the room freely.</li>
+                        <li><strong>Scene 3 (Admin Voice Announcer):</strong> Switch to <em>Staff Admin</em>, select <em>Counter 3</em>, and click <strong>Call Next</strong>. Notice the browser voice speak out loud: <em>"Token A 42, please proceed to Counter 3"</em> and the user tracker updates in real-time!</li>
+                        <li><strong>Scene 4 (Priority Triage):</strong> Demonstrate toggling a priority token for emergency/elderly cases directly in the admin table.</li>
+                    </ol>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-slate-900 mb-2">💡 Key Tech Highlights to Mention</h4>
+                    <ul class="list-disc pl-5 space-y-1 text-slate-600">
+                        <li><strong>Web Speech API:</strong> Native text-to-speech lobby voice announcements without extra hardware.</li>
+                        <li><strong>Heuristic AI Prediction:</strong> Dynamic wait time calculated using active counters and people ahead.</li>
+                        <li><strong>Cross-View Synchronization:</strong> LocalStorage state binding connects admin actions instantly with user screens.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-8 pt-4 border-t border-slate-100 flex justify-end">
+                <button onclick="closePitchModal()" class="px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold">Got it, let's win!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Section -->
+    <footer class="bg-white border-t border-slate-200 mt-20 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div class="space-y-3">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white">
+                            <i data-lucide="ticket" class="w-4 h-4"></i>
+                        </div>
+                        <span class="font-bold text-slate-900 text-lg">QueueLess</span>
+                    </div>
+                    <p class="text-xs text-slate-500 leading-relaxed">QueueLess — Smarter queues. Better experiences. Eliminating wasted time across service organizations.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-900 text-sm mb-3">About</h4>
+                    <ul class="space-y-2 text-xs text-slate-600">
+                        <li><a href="#" onclick="switchTab('landing')" class="hover:text-brand-600">Our Mission</a></li>
+                        <li><a href="#" onclick="switchTab('landing')" class="hover:text-brand-600">How It Works</a></li>
+                        <li><a href="#" onclick="switchTab('landing')" class="hover:text-brand-600">Impact & Benefits</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-900 text-sm mb-3">Features</h4>
+                    <ul class="space-y-2 text-xs text-slate-600">
+                        <li><a href="#" onclick="switchTab('wizard')" class="hover:text-brand-600">Digital Token Generation</a></li>
+                        <li><a href="#" onclick="switchTab('queue')" class="hover:text-brand-600">Real-time Live Tracker</a></li>
+                        <li><a href="#" onclick="switchTab('admin')" class="hover:text-brand-600">Staff Control Dashboard</a></li>
+                        <li><a href="#" onclick="switchTab('admin')" class="hover:text-brand-600">Priority Triage Mode</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-slate-900 text-sm mb-3">Contact</h4>
+                    <ul class="space-y-2 text-xs text-slate-600">
+                        <li><span>Support: support@queueless.app</span></li>
+                        <li><span>Inquiries: hello@queueless.app</span></li>
+                        <li><span>Office: Tech Park, Innovation Hub</span></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pt-8 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+                <p>© 2026 QueueLess Systems Inc. All rights reserved.</p>
+                <p class="font-semibold text-slate-700">QueueLess — Skip the waiting. Not the service.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Lucide icons on load
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            loadState();
+            renderQueueTracker();
+            renderAdminTable();
+        });
+
+        // Global State Structure with LocalStorage Persistence
+        const DEFAULT_STATE = {
+            activeTab: 'landing',
+            currentUser: {
+                name: 'Alex Morgan',
+                orgType: 'College',
+                service: 'Certificate Request',
+                tokenNum: 47,
+                tokenStr: 'A-047',
+                contact: 'alex@example.com',
+                status: 'waiting',
+                isPriority: false,
+                counter: 'Counter 3'
+            },
+            currentServingNum: 41,
+            completedCount: 40,
+            avgServiceMinutes: 2.0,
+            activeCounters: 3,
+            isPaused: false,
+            satisfactionScore: 4.9,
+            ratingsTotal: 25,
+            ratingsSum: 122.5,
+            queueList: [
+                { id: 42, str: 'A-042', name: 'Sarah Connor', service: 'Certificate Request', status: 'waiting', isPriority: false, counter: 'Counter 1' },
+                { id: 43, str: 'A-043', name: 'James Miller', service: 'Fee Enquiry', status: 'waiting', isPriority: false, counter: 'Counter 1' },
+                { id: 44, str: 'A-044', name: 'Elena Gilbert', service: 'Bonafide Request', status: 'waiting', isPriority: false, counter: 'Counter 2' },
+                { id: 45, str: 'A-045', name: 'Bruce Wayne', service: 'OD Request', status: 'waiting', isPriority: true, counter: 'Counter 2' },
+                { id: 46, str: 'A-046', name: 'Clark Kent', service: 'General Enquiry', status: 'waiting', isPriority: false, counter: 'Counter 3' },
+                { id: 47, str: 'A-047', name: 'Alex Morgan', service: 'Certificate Request', status: 'waiting', isPriority: false, counter: 'Counter 3' },
+                { id: 48, str: 'A-048', name: 'Diana Prince', service: 'Certificate Request', status: 'waiting', isPriority: false, counter: 'Counter 3' },
+                { id: 49, str: 'A-049', name: 'Barry Allen', service: 'Fee Enquiry', status: 'waiting', isPriority: false, counter: 'Counter 1' }
+            ]
+        };
+
+        let appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+
+        function saveState() {
+            try {
+                localStorage.setItem('queueless_state', JSON.stringify(appState));
+            } catch (e) {
+                console.error('LocalStorage error:', e);
+            }
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('queueless_state');
+                if (saved) {
+                    appState = JSON.parse(saved);
+                }
+            } catch (e) {
+                console.error('LocalStorage read error:', e);
+            }
+        }
+
+        function resetDemoState() {
+            appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+            saveState();
+            switchTab('landing');
+            renderQueueTracker();
+            renderAdminTable();
+            showToast('🔄 Demo state reset successfully!', 'info');
+        }
+
+        // Voice Announcement using Web Speech API
+        function speakAnnouncement(tokenStr, counterName) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const cleanToken = tokenStr.replace('-', ' ');
+                const text = `Token ${cleanToken}, please proceed to ${counterName}.`;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.95;
+                utterance.pitch = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            appState.activeTab = tabId;
+            saveState();
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+            ['landing', 'wizard', 'queue', 'admin'].forEach(t => {
+                const btn = document.getElementById(`nav-${t}`);
+                if (btn) {
+                    if (t === tabId) {
+                        btn.className = 'px-3 py-2 rounded-lg text-sm font-medium text-brand-600 bg-brand-50 transition-all';
+                    } else {
+                        btn.className = 'px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition-all';
+                    }
+                }
+            });
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            lucide.createIcons();
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        function openPitchModal() {
+            document.getElementById('pitch-modal').classList.remove('hidden');
+        }
+
+        function closePitchModal() {
+            document.getElementById('pitch-modal').classList.add('hidden');
+        }
+
+        // Update departments dynamically based on org type selection
+        function updateDepartments() {
+            const org = document.querySelector('input[name="orgType"]:checked').value;
+            const select = document.getElementById('department-select');
+            select.innerHTML = '';
+            
+            let depts = [];
+            if (org === 'College') {
+                depts = ['Certificate Request', 'Fee Enquiry', 'Bonafide Request', 'OD Request', 'General Enquiry'];
+            } else if (org === 'Hospital') {
+                depts = ['Emergency OPD', 'General Physician Consultation', 'Pharmacy Counter', 'Laboratory Testing', 'Billing & Discharge'];
+            } else if (org === 'Bank') {
+                depts = ['Cash Deposit & Withdrawal', 'Loan Enquiry', 'Account Opening & KYC', 'Customer Support', 'Forex Services'];
+            } else if (org === 'Govt Office') {
+                depts = ['Document Verification', 'License & Permit Renewal', 'Tax Assessment', 'Grievance Redressal', 'General Information'];
+            } else {
+                depts = ['General Inquiry', 'Customer Support', 'Billing Counter', 'Technical Assistance'];
+            }
+
+            depts.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = d;
+                select.appendChild(opt);
+            });
+        }
+
+        // Handle token generation from wizard
+        function handleGenerateToken(e) {
+            e.preventDefault();
+            const name = document.getElementById('user-name').value;
+            const contact = document.getElementById('user-contact').value;
+            const service = document.getElementById('department-select').value;
+            const orgType = document.querySelector('input[name="orgType"]:checked').value;
+
+            appState.currentUser.name = name;
+            appState.currentUser.contact = contact;
+            appState.currentUser.service = service;
+            appState.currentUser.orgType = orgType;
+            appState.currentUser.status = 'waiting';
+            appState.currentUser.tokenNum = 47;
+            appState.currentUser.tokenStr = 'A-047';
+
+            document.getElementById('nav-queue-badge').classList.remove('hidden');
+            document.getElementById('feedback-section').classList.add('hidden');
+
+            saveState();
+            switchTab('queue');
+            renderQueueTracker();
+            showToast(`🎟️ Digital Token ${appState.currentUser.tokenStr} successfully generated!`);
+        }
+
+        // Render Live Queue Tracker Page
+        function renderQueueTracker() {
+            document.getElementById('tracker-service-title').textContent = `${appState.currentUser.orgType} — ${appState.currentUser.service}`;
+            document.getElementById('tracker-visitor-name').textContent = appState.currentUser.name;
+            document.getElementById('tracker-token-display').textContent = appState.currentUser.tokenStr;
+            document.getElementById('tracker-serving-token').textContent = `A-${String(appState.currentServingNum).padStart(3, '0')}`;
+            
+            const peopleAhead = Math.max(0, appState.currentUser.tokenNum - appState.currentServingNum - 1);
+            document.getElementById('tracker-people-ahead').textContent = peopleAhead;
+
+            // Heuristic AI wait time calculation formula = people ahead * avg service time
+            const estMinutes = Math.max(1, Math.round(peopleAhead * appState.avgServiceMinutes));
+            document.getElementById('tracker-wait-time').textContent = `${estMinutes} min`;
+            document.getElementById('tracker-counter').textContent = appState.currentUser.counter;
+
+            const priorityBadge = document.getElementById('tracker-priority-badge');
+            if (appState.currentUser.isPriority) {
+                priorityBadge.classList.remove('hidden');
+            } else {
+                priorityBadge.classList.add('hidden');
+            }
+
+            const statusText = document.getElementById('tracker-status-text');
+            if (appState.currentServingNum >= appState.currentUser.tokenNum) {
+                appState.currentUser.status = 'completed';
+                statusText.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800';
+                statusText.textContent = 'Status: Completed / Served';
+                document.getElementById('feedback-section').classList.remove('hidden');
+            } else if (peopleAhead <= 2) {
+                statusText.className = 'px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 animate-pulse';
+                statusText.textContent = 'Status: Almost Your Turn!';
+            } else {
+                statusText.className = 'px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800';
+                statusText.textContent = 'Status: Waiting in Queue';
+            }
+
+            // Render Queue Flow Chain
+            const chain = document.getElementById('queue-flow-chain');
+            chain.innerHTML = '';
+
+            let nodes = [
+                appState.currentServingNum,
+                appState.currentServingNum + 1,
+                appState.currentServingNum + 2,
+                appState.currentServingNum + 3,
+                appState.currentUser.tokenNum
+            ];
+            nodes = [...new Set(nodes)].sort((a, b) => a - b);
+
+            nodes.forEach((num, idx) => {
+                const isServing = num === appState.currentServingNum;
+                const isUser = num === appState.currentUser.tokenNum;
+                const str = `A-${String(num).padStart(3, '0')}`;
+
+                const nodeDiv = document.createElement('div');
+                nodeDiv.className = `px-4 py-3 rounded-xl border flex flex-col items-center justify-center transition-all ${
+                    isUser ? 'bg-brand-600 text-white border-brand-600 shadow-lg shadow-brand-500/30 scale-105 font-bold' :
+                    isServing ? 'bg-brand-50 text-brand-700 border-brand-300 font-bold' : 'bg-slate-50 text-slate-700 border-slate-200'
+                }`;
+                nodeDiv.innerHTML = `
+                    <span class="text-[9px] uppercase font-semibold opacity-75">${isUser ? 'YOUR TOKEN' : isServing ? 'SERVING' : 'WAITING'}</span>
+                    <span class="text-base font-black">${str}</span>
+                `;
+                chain.appendChild(nodeDiv);
+
+                if (idx < nodes.length - 1) {
+                    const arrow = document.createElement('div');
+                    arrow.className = 'text-slate-300 font-bold';
+                    arrow.innerHTML = '→';
+                    chain.appendChild(arrow);
+                }
+            });
+
+            saveState();
+        }
+
+        function shareTokenLink() {
+            const shareText = `Track my QueueLess token ${appState.currentUser.tokenStr} live! Currently serving A-${String(appState.currentServingNum).padStart(3, '0')}.`;
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareText).then(() => {
+                    showToast('📋 Companion link copied to clipboard!');
+                });
+            } else {
+                showToast(shareText, 'info');
+            }
+        }
+
+        // Post-service feedback rating
+        function submitRating(label, score) {
+            appState.ratingsTotal++;
+            appState.ratingsSum += score;
+            appState.satisfactionScore = (appState.ratingsSum / appState.ratingsTotal).toFixed(1);
+
+            document.getElementById('admin-metric-satisfaction').textContent = `${appState.satisfactionScore}/5`;
+            document.getElementById('feedback-section').innerHTML = `
+                <div class="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="heart" class="w-6 h-6"></i>
+                </div>
+                <h4 class="text-xl font-bold text-slate-900 mb-1">Thank you for your feedback!</h4>
+                <p class="text-xs text-slate-500">You rated your experience as <strong class="text-brand-600">${label} (${score}/5)</strong>. Have a wonderful day!</p>
+            `;
+            lucide.createIcons();
+            saveState();
+            showToast('⭐ Thank you for rating QueueLess!');
+        }
+
+        // Admin Actions & Dashboard Logic
+        function adminCallNext() {
+            if (appState.isPaused) {
+                showToast('⚠️ Counter is currently paused by staff.', 'warning');
+                return;
+            }
+            appState.currentServingNum++;
+            appState.completedCount++;
+
+            const selectedCounter = document.getElementById('admin-counter-select').value;
+            appState.currentUser.counter = selectedCounter;
+
+            const servingStr = `A-${String(appState.currentServingNum).padStart(3, '0')}`;
+
+            // Trigger Voice Announcement
+            speakAnnouncement(servingStr, selectedCounter);
+
+            // Proximity notification for user
+            const diff = appState.currentUser.tokenNum - appState.currentServingNum;
+            if (diff === 2) {
+                showToast('🔔 Notification: Your turn is approaching! Only 2 tokens away.', 'info');
+            } else if (diff === 0) {
+                showToast(`🎉 Notification: It's your turn! Please proceed to ${selectedCounter}.`, 'success');
+            }
+
+            updateAdminUI();
+            renderQueueTracker();
+            renderAdminTable();
+            showToast(`📢 Called ${servingStr} to ${selectedCounter}`);
+        }
+
+        function adminRecall() {
+            const servingStr = `A-${String(appState.currentServingNum).padStart(3, '0')}`;
+            const counter = document.getElementById('admin-counter-select').value;
+            speakAnnouncement(servingStr, counter);
+            showToast(`🔔 Recalling ${servingStr} to ${counter}!`);
+        }
+
+        function adminSkip() {
+            appState.currentServingNum++;
+            updateAdminUI();
+            renderQueueTracker();
+            renderAdminTable();
+            showToast('⏭️ Token skipped and moved to next.');
+        }
+
+        function adminTogglePause() {
+            appState.isPaused = !appState.isPaused;
+            const btn = document.getElementById('admin-pause-btn');
+            const badge = document.getElementById('admin-queue-status-badge');
+            if (appState.isPaused) {
+                btn.textContent = 'Resume Counter';
+                btn.className = 'px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm transition-all';
+                badge.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-100 text-amber-800 flex items-center gap-1.5';
+                badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Counter Paused';
+                showToast('⏸️ Counter paused successfully.', 'warning');
+            } else {
+                btn.textContent = 'Pause Counter';
+                btn.className = 'px-4 py-3 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-sm transition-all';
+                badge.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-800 flex items-center gap-1.5';
+                badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Queue Active';
+                showToast('▶️ Counter resumed.', 'success');
+            }
+            saveState();
+        }
+
+        function toggleTokenPriority(tokenNum) {
+            const item = appState.queueList.find(q => q.id === tokenNum);
+            if (item) {
+                item.isPriority = !item.isPriority;
+                if (item.id === appState.currentUser.tokenNum) {
+                    appState.currentUser.isPriority = item.isPriority;
+                }
+                saveState();
+                renderAdminTable();
+                renderQueueTracker();
+                showToast(`⚡ Priority status updated for ${item.str}`);
+            }
+        }
+
+        function speakSpecificToken(tokenStr, counter) {
+            speakAnnouncement(tokenStr, counter);
+            showToast(`🔊 Speaking announcement for ${tokenStr}`);
+        }
+
+        function updateAdminUI() {
+            document.getElementById('admin-metric-serving').textContent = `A-${String(appState.currentServingNum).padStart(3, '0')}`;
+            const waiting = Math.max(0, 49 - appState.currentServingNum);
+            document.getElementById('admin-metric-waiting').textContent = waiting;
+            document.getElementById('admin-metric-completed').textContent = appState.completedCount;
+            document.getElementById('admin-metric-satisfaction').textContent = `${appState.satisfactionScore}/5`;
+            saveState();
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('admin-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            appState.queueList.forEach(t => {
+                if (t.id <= appState.currentServingNum) return;
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition-all';
+                tr.innerHTML = `
+                    <td class="p-4 font-bold text-brand-600">${t.str}</td>
+                    <td class="p-4 font-medium text-slate-800">${t.name}</td>
+                    <td class="p-4 text-slate-600">${t.service}</td>
+                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">Waiting (${t.counter})</span></td>
+                    <td class="p-4">${t.isPriority ? '<span class="px-2 py-0.5 rounded text-[10px] bg-red-100 text-red-700 font-bold uppercase">Priority Active</span>' : '<span class="px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-600">Standard</span>'}</td>
+                    <td class="p-4 text-right space-x-2">
+                        <button onclick="speakSpecificToken('${t.str}', '${t.counter}')" class="p-2 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-semibold transition-all" title="Speak Announcement">
+                            <i data-lucide="volume-2" class="w-4 h-4 inline"></i>
+                        </button>
+                        <button onclick="toggleTokenPriority(${t.id})" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-600 hover:text-white text-xs font-semibold transition-all">
+                            ${t.isPriority ? 'Remove Priority' : 'Set Priority'}
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        // Custom Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgCol = 'bg-slate-900 text-white';
+            if (type === 'success') bgCol = 'bg-emerald-600 text-white';
+            if (type === 'warning') bgCol = 'bg-amber-600 text-white';
+            if (type === 'info') bgCol = 'bg-brand-600 text-white';
+
+            toast.className = `pointer-events-auto px-5 py-3 rounded-2xl shadow-2xl font-semibold text-sm flex items-center gap-3 transition-all transform translate-y-2 opacity-0 ${bgCol}`;
+            toast.innerHTML = `<i data-lucide="bell" class="w-4 h-4"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
